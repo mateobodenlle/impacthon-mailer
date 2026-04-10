@@ -1,0 +1,18 @@
+{
+  "name": "impacthon-mailer",
+  "version": "1.0.0",
+  "description": "Registro de usuarios en Supabase y envío de credenciales por email para Impacthon 2026",
+  "scripts": {
+    "register": "node src/register.js",
+    "send": "node src/send-emails.js",
+    "check:users": "node src/check-users.js",
+    "check:roles": "node src/check-roles.js",
+    "fix:roles": "node src/fix-roles.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "dotenv": "^16.4.7",
+    "nodemailer": "^6.10.1",
+    "xlsx": "^0.18.5"
+  }
+}
