@@ -5,11 +5,14 @@
 //   node src/send-emails.js data/credenciales.csv --test email (envía solo a esa dirección como prueba)
 //
 // El CSV debe tener: Nombre,Email,Contraseña
+//
+// Cada envío correcto se apunta en <csv>.enviados.log: si el envío se corta, volver a
+// lanzarlo continúa donde quedó y no repite correos.
 
 const fs = require('fs');
 const path = require('path');
 const { transporter, emailConfig } = require('./config');
-const { getEmailHTML } = require('./email-template');
+const { getEmailHTML, getEmailText } = require('./email-template');
 
 function parseCSV(filePath) {
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -56,29 +59,42 @@ async function main() {
             from: `"${emailConfig.fromName}" <${emailConfig.fromAddress}>`,
             to: testEmail,
             subject: `[TEST] ${emailConfig.subject}`,
-            html: getEmailHTML(sample.nombre, sample.email, sample.password)
+            html: getEmailHTML(sample.nombre, sample.email, sample.password),
+            ...(getEmailText && { text: getEmailText(sample.nombre, sample.email, sample.password) })
         });
         console.log('✅ Email de prueba enviado');
         return;
     }
 
+    const logFile = `${filePath}.enviados.log`;
+    const alreadySent = new Set(
+        fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf-8').split(/?
+/).filter(Boolean) : []
+    );
+    const pending = entries.filter(e => !alreadySent.has(e.email));
+    if (alreadySent.size) console.log(`${entries.length - pending.length} xa enviados antes (${path.basename(logFile)}): sáltanse
+`);
+
     let ok = 0, fail = 0;
 
-    for (let i = 0; i < entries.length; i++) {
-        const { nombre, email, password } = entries[i];
+    for (let i = 0; i < pending.length; i++) {
+        const { nombre, email, password } = pending[i];
         try {
             await transporter.sendMail({
                 from: `"${emailConfig.fromName}" <${emailConfig.fromAddress}>`,
                 to: email,
                 subject: emailConfig.subject,
-                html: getEmailHTML(nombre, email, password)
+                html: getEmailHTML(nombre, email, password),
+                ...(getEmailText && { text: getEmailText(nombre, email, password) })
             });
+            fs.appendFileSync(logFile, email + '
+');
             ok++;
-            console.log(`[${i + 1}/${entries.length}] ✅ ${email}`);
+            console.log(`[${i + 1}/${pending.length}] ✅ ${email}`);
             await new Promise(r => setTimeout(r, 500));
         } catch (err) {
             fail++;
-            console.error(`[${i + 1}/${entries.length}] ❌ ${email}: ${err.message}`);
+            console.error(`[${i + 1}/${pending.length}] ❌ ${email}: ${err.message}`);
         }
     }
 

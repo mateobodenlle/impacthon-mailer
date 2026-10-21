@@ -44,7 +44,8 @@ npm run fix:roles     # Cambiar roles (editar array en el archivo)
 ```
 src/
   config.js            - Conexiones Supabase + SMTP
-  email-template.js    - Template HTML del email
+  email-template.js    - Elige la plantilla según EMAIL_TEMPLATE
+  templates/           - Plantillas por evento (impacthon, hack-the-vibe)
   supabase-helpers.js  - getAllUsers, createUser
   register.js          - Flujo completo: Excel → Supabase → Email
   send-emails.js       - Envío de emails desde CSV
@@ -61,4 +62,5 @@ data/
 - Supabase tiene un trigger `handle_new_user` que auto-crea el perfil con rol `Asistente`.
 - El script espera 1s después de crear el usuario para que el trigger actúe.
 - Delay de 500ms entre emails para evitar rate limiting de Gmail.
+- `send-emails.js` apunta cada envío en `<csv>.enviados.log`: relanzarlo continúa sin repetir correos.
 - `register.js` cruza con Supabase usando paginación completa (no se limita a 50 usuarios).
